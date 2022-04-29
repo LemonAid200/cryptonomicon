@@ -19,7 +19,11 @@
           <div class="max-w-xs">
             <label for="wallet" class="block text-sm font-medium text-gray-700">Тикер</label>
             <div class="mt-1 relative rounded-md shadow-md">
-              <input type="text" name="wallet" id="wallet"
+              <input
+                v-model="ticker"
+                @keydown="isAlreadyAddedError=false"
+                @keydown.enter="add"
+                type="text" name="wallet" id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
                 placeholder="Например DOGE" />
             </div>
@@ -41,10 +45,11 @@
                 CHD
               </span>
             </div>
-            <div v-if="ticketAlreadyExistsError" class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-if="isAlreadyAddedError" class="text-sm text-red-600">Такой тикер уже добавлен</div>
           </div>
         </div>
         <button type="button"
+        @click="add"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
           <!-- Heroicon name: solid/mail -->
           <svg class="-ml-0.5 mr-2 h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="30" height="30"
@@ -57,12 +62,15 @@
         </button>
       </section>
 
-      <hr class="w-full border-t border-gray-600 my-4" />
+      <hr v-if="tickers.length" class="w-full border-t border-gray-600 my-4" />
 
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
 
-        <div v-for="ticker in tickers" :key="ticker.name" class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer">
+        <div v-for="ticker in tickers" :key="ticker.name" 
+        @click="selectedTicker=ticker.name"
+        :class="{['border-4'] : selectedTicker===ticker.name}" 
+        class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer">
           <div class="px-4 py-5 sm:p-6 text-center">
             <dt class="text-sm font-medium text-gray-500 truncate">
               {{ticker.name}} - USD
@@ -73,6 +81,7 @@
           </div>
           <div class="w-full border-t border-gray-200"></div>
           <button
+            @click="deleteTicker(ticker)"
             class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none">
             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#718096"
               aria-hidden="true">
@@ -83,33 +92,11 @@
           </button>
         </div>
 
-
-        
-        <div class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid border-4 cursor-pointer">
-          <div class="px-4 py-5 sm:p-6 text-center">
-            <dt class="text-sm font-medium text-gray-500 truncate">
-              VUE - RUB
-            </dt>
-            <dd class="mt-1 text-3xl font-semibold text-gray-900">
-              80000.00
-            </dd>
-          </div>
-          <div class="w-full border-t border-gray-200"></div>
-          <button
-            class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none">
-            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#718096"
-              aria-hidden="true">
-              <path fill-rule="evenodd"
-                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                clip-rule="evenodd"></path>
-            </svg>Удалить
-          </button>
-        </div>
-        
       </dl>
 
 
-      <hr class="w-full border-t border-gray-600 my-4" />
+      <hr v-if="tickers.length" class="w-full border-t border-gray-600 my-4" />
+     
       <section class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           VUE - USD
@@ -138,14 +125,53 @@
 
 <script>
   export default {
+    name: "app",
     components: {},
     methods: {
+      add(){
+        this.ticker = this.ticker.toUpperCase()
+        const newTicker = {name: this.ticker, value: '-'}
+        if (newTicker.name == ''){return}
+        this.tickers.forEach((item) => {
+          if (item.name == newTicker.name){
+            this.isAlreadyAddedError = true
+            return
+            }
+        })
+        if (this.isAlreadyAddedError){return}
+        this.tickers.push(newTicker)
+
+        setInterval(async() =>{
+          const f = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${newTicker.name}&tsyms=USD&api_key=${this.key}`
+          )
+          const data = await f.json()
+          console.log(data)
+          this.tickers.find(t => t.name == newTicker.name).value = data.USD
+        }, 3000)
+        this.ticker = ''
+      },
+      deleteTicker(tickerToDelete){
+        let i = 0
+        this.tickers.forEach((item) => {
+          if (item.name == tickerToDelete.name){
+            this.tickers.splice(i, 1)
+            if (this.ticker == tickerToDelete.name){
+              this.isAlreadyAddedError = false
+            }
+          }
+            i+=1
+        })
+      }
 
     },
     data() {
       return {
         loadingPage: true,
-        ticketAlreadyExistsError: false,
+        isAlreadyAddedError: false,
+        selectedTicker: "BTC",
+        ticker: "",
+        key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
         tickers: [
           {name: "BTC", value: 69},
           {name: "DOGE", value: 420},
