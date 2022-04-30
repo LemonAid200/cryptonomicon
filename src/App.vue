@@ -22,7 +22,7 @@
               <input
                 v-model="ticker"
                 @keydown="isAlreadyAddedError=false"
-                @keydown.enter="add"
+                @keydown.enter="addNewTicker"
                 type="text" name="wallet" id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
                 placeholder="Например DOGE" />
@@ -49,7 +49,7 @@
           </div>
         </div>
         <button type="button"
-        @click="add"
+        @click="addNewTicker"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
           <!-- Heroicon name: solid/mail -->
           <svg class="-ml-0.5 mr-2 h-6 w-6" xmlns="http://www.w3.org/2000/svg" width="30" height="30"
@@ -97,7 +97,7 @@
 
       <hr v-if="tickers.length" class="w-full border-t border-gray-600 my-4" />
      
-      <section class="relative">
+      <section v-if="isGraphShowed"  class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           VUE - USD
         </h3>
@@ -107,7 +107,7 @@
           <div class="bg-purple-800 border w-10 h-48"></div>
           <div class="bg-purple-800 border w-10 h-16"></div>
         </div>
-        <button type="button" class="absolute top-0 right-0">
+        <button @click="closeGraph" type="button" class="absolute top-0 right-0">
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
             xmlns:svgjs="http://svgjs.com/svgjs" version="1.1" width="30" height="30" x="0" y="0"
             viewBox="0 0 511.76 511.76" style="enable-background:new 0 0 512 512" xml:space="preserve">
@@ -128,7 +128,7 @@
     name: "app",
     components: {},
     methods: {
-      add(){
+      addNewTicker(){
         this.ticker = this.ticker.toUpperCase()
         const newTicker = {name: this.ticker, value: '-'}
         if (newTicker.name == ''){return}
@@ -139,16 +139,7 @@
             }
         })
         if (this.isAlreadyAddedError){return}
-        this.tickers.push(newTicker)
-
-        setInterval(async() =>{
-          const f = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${newTicker.name}&tsyms=USD&api_key=${this.key}`
-          )
-          const data = await f.json()
-          console.log(data)
-          this.tickers.find(t => t.name == newTicker.name).value = data.USD
-        }, 3000)
+        this.tickers.push(newTicker)       
         this.ticker = ''
       },
       deleteTicker(tickerToDelete){
@@ -162,8 +153,10 @@
           }
             i+=1
         })
+      },
+      closeGraph(){
+        this.isGraphShowed =false
       }
-
     },
     data() {
       return {
@@ -172,6 +165,7 @@
         selectedTicker: "BTC",
         ticker: "",
         key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
+        isGraphShowed: true,
         tickers: [
           {name: "BTC", value: 69},
           {name: "DOGE", value: 420},
@@ -184,7 +178,18 @@
       setTimeout(() => {
         this.loadingPage = !this.loadingPage
       }, 1500)
+      
+      setInterval(async() =>{      
+        if (this.tickers.length !== 0){
+          for (const item of this.tickers) {
+            const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`)
+            const data = await f.json()
+            this.tickers.find(t => t.name == item.name).value = data.USD        
+          }
+        }
+      }, 3000)
     }
+
   }
 </script>
 
