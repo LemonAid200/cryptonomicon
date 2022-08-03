@@ -161,17 +161,13 @@
       // async closeGraph() {
       //   const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
       //   const data = await coinList.json()
-      //   // console.log(data)
-
+      //   console.log(data)
       //   const objectives = new Map()
       //   for (const [key, value] of Object.entries(data.Data)) {
       //     objectives.set(key, value)
       //   }
       //   console.log(typeof objectives)
-        
       //   Object.entries(data.Data).forEach((item) => console.log(item[0]))
-
-        
       // }
       
     },
