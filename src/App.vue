@@ -28,22 +28,12 @@
                 placeholder="Например DOGE" />
             </div>
             <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-                BTC
+              <span v-for="prompt in prompts" :key="prompt" 
+                 @click="isAlreadyAddedError = false;addNewTicker(event, tickerName = prompt)"
+                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
+                {{prompt}}
               </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
-                CHD
-              </span>
+              
             </div>
             <div v-if="isAlreadyAddedError" class="text-sm text-red-600">Такой тикер уже добавлен</div>
           </div>
@@ -68,7 +58,8 @@
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
 
         <div v-for="ticker in tickers" :key="ticker.name" 
-        @click="selectedTicker=ticker.name"
+        
+        @click="selectedTicker=ticker.name; toggleGraph(ticker)"
         :class="{['border-4'] : selectedTicker===ticker.name}" 
         class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer">
           <div class="px-4 py-5 sm:p-6 text-center">
@@ -76,12 +67,12 @@
               {{ticker.name}} - USD
             </dt>
             <dd class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ticker.value}}
+              {{ticker.value[ticker.value.length - 1] || '-'}}
             </dd>
           </div>
           <div class="w-full border-t border-gray-200"></div>
           <button
-            @click="deleteTicker(ticker)"
+            @click.stop="deleteTicker(ticker)"
             class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none">
             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#718096"
               aria-hidden="true">
@@ -99,7 +90,7 @@
      
       <section v-if="isGraphShowed"  class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          VUE - USD
+          {{this.selectedTicker}} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div class="bg-purple-800 border w-10 h-24"></div>
@@ -107,7 +98,7 @@
           <div class="bg-purple-800 border w-10 h-48"></div>
           <div class="bg-purple-800 border w-10 h-16"></div>
         </div>
-        <button @click="closeGraph" type="button" class="absolute top-0 right-0">
+        <button @click="toggleGraph" type="button" class="absolute top-0 right-0">
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
             xmlns:svgjs="http://svgjs.com/svgjs" version="1.1" width="30" height="30" x="0" y="0"
             viewBox="0 0 511.76 511.76" style="enable-background:new 0 0 512 512" xml:space="preserve">
@@ -128,9 +119,10 @@
     name: "app",
     components: {},
     methods: {
-      addNewTicker(){
+      addNewTicker(event, tickerName = false){
+        if (tickerName) this.ticker = tickerName
         this.ticker = this.ticker.toUpperCase()
-        const newTicker = {name: this.ticker, value: '-'}
+        const newTicker = {name: this.ticker, value: []}
         if (newTicker.name == ''){return}
         this.tickers.forEach((item) => {
           if (item.name == newTicker.name){
@@ -154,35 +146,46 @@
             i+=1
         })
       },
-      closeGraph(){
-        this.isGraphShowed = false
+      toggleGraph(ticker){
+        if (ticker.name){
+          this.isGraphShowed = true         
+        }
+        else{
+          this.isGraphShowed = !this.isGraphShowed         
+        }
+        
       },
 
       // async closeGraph() {
       //   const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
       //   const data = await coinList.json()
-      //   console.log(data)
+      //   // console.log(data)
+
       //   const objectives = new Map()
       //   for (const [key, value] of Object.entries(data.Data)) {
       //     objectives.set(key, value)
       //   }
       //   console.log(typeof objectives)
+        
       //   Object.entries(data.Data).forEach((item) => console.log(item[0]))
+
+        
       // }
       
     },
     data() {
       return {
         loadingPage: true,
+        prompts: ['BTC', 'DOGE', 'BCH', 'CHD'],
         isAlreadyAddedError: false,
         selectedTicker: "BTC",
         ticker: "",
         key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
         isGraphShowed: true,
         tickers: [
-          // {name: "BTC", value: 69},
-          // {name: "DOGE", value: 420},
-          // {name: "JOPA", value: 322}
+          {name: "BTC", value: [69]},
+          {name: "DOGE", value: [420]},
+          {name: "JOPA", value: [322]}
         ]
       }
     },
@@ -198,10 +201,10 @@
           for (const item of this.tickers) {
             const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`)
             const data = await f.json()
-            this.tickers.find(t => t.name == item.name).value = data.USD        
+            this.tickers.find(t => t.name == item.name).value.push(data.USD)  
           }
         }
-      }, 3000)
+      }, 9000)
 
      
     }
