@@ -153,26 +153,14 @@
         else{
           this.isGraphShowed = !this.isGraphShowed         
         }
-        
       },
-
-      // async closeGraph() {
-      //   const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
-      //   const data = await coinList.json()
-      //   // console.log(data)
-
-      //   const objectives = new Map()
-      //   for (const [key, value] of Object.entries(data.Data)) {
-      //     objectives.set(key, value)
-      //   }
-      //   console.log(typeof objectives)
-        
-      //   Object.entries(data.Data).forEach((item) => console.log(item[0]))
-
-        
-      // }
-      
+      async getValues(){
+        this.listOfAllValues = await fetch(`https://min-api.cryptocompare.com/data/price&tsyms=USD&api_key=${this.key}`)
+        this.listOfAllValues = await this.listOfAllValues.json()
+        console.log(this.listOfAllValues)
+      },
     },
+
     data() {
       return {
         loadingPage: true,
@@ -182,10 +170,11 @@
         ticker: "",
         key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
         isGraphShowed: true,
+        listOfAllValues: [],
         tickers: [
           {name: "BTC", value: [69]},
-          {name: "DOGE", value: [420]},
-          {name: "JOPA", value: [322]}
+          // {name: "DOGE", value: [420]},
+          // {name: "JOPA", value: [322]}
         ]
       }
     },
@@ -206,9 +195,9 @@
         }
       }, 9000)
 
-     
+      this.getValues()
+           
     }
-
   }
 </script>
 
