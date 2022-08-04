@@ -19,9 +19,11 @@
           <div class="max-w-xs">
             <label for="wallet" class="block text-sm font-medium text-gray-700">Тикер</label>
             <div class="mt-1 relative rounded-md shadow-md">
+
+               <!-- will add an updater of prompts later -->
               <input
                 v-model="ticker"
-                @keydown="isAlreadyAddedError=false"
+                @keydown="updatePrompts(); isAlreadyAddedError=false"
                 @keydown.enter="addNewTicker"
                 type="text" name="wallet" id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
@@ -29,7 +31,8 @@
             </div>
             <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
               <span v-for="prompt in prompts" :key="prompt" 
-                 @click="isAlreadyAddedError = false;addNewTicker(event, tickerName = prompt)"
+                 
+                 @click="isAlreadyAddedError = false; addNewTicker(event, tickerName = prompt)"
                  class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
                 {{prompt}}
               </span>
@@ -134,6 +137,7 @@
         this.tickers.push(newTicker)       
         this.ticker = ''
       },
+
       deleteTicker(tickerToDelete){
         let i = 0
         this.tickers.forEach((item) => {
@@ -146,6 +150,7 @@
             i+=1
         })
       },
+
       toggleGraph(ticker){
         if (ticker.name){
           this.isGraphShowed = true         
@@ -154,9 +159,20 @@
           this.isGraphShowed = !this.isGraphShowed         
         }
       },
+      
+      updatePrompts(){
+        console.log(this.listOfAllValues.indexOf(this.ticker))
+
+      },
+
       async getValues(){
-        this.listOfAllValues = await fetch(`https://min-api.cryptocompare.com/data/price&tsyms=USD&api_key=${this.key}`)
-        this.listOfAllValues = await this.listOfAllValues.json()
+             
+        const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
+        const data = await coinList.json()        
+        for (var key in data.Data){
+          this.listOfAllValues.push(data.Data[key].Symbol)
+        }
+        this.listOfAllValues.sort()
         console.log(this.listOfAllValues)
       },
     },
