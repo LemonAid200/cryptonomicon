@@ -23,7 +23,7 @@
                <!-- will add an updater of prompts later -->
               <input
                 v-model="ticker"
-                @keydown="updatePrompts(); isAlreadyAddedError=false"
+                @keydown="isAlreadyAddedError=false"
                 @keydown.enter="addNewTicker"
                 type="text" name="wallet" id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
@@ -100,6 +100,12 @@
           <div class="bg-purple-800 border w-10 h-32"></div>
           <div class="bg-purple-800 border w-10 h-48"></div>
           <div class="bg-purple-800 border w-10 h-16"></div>
+          <div class="bg-purple-800 border w-10 h-24"></div>
+          <div class="bg-purple-800 border w-10 h-32"></div>
+          <div class="bg-purple-800 border w-10 h-5"></div>
+          <div class="bg-purple-800 border w-10 h-5"></div>
+          <div class="bg-purple-800 border w-10 h-5"></div>
+
         </div>
         <button @click="toggleGraph" type="button" class="absolute top-0 right-0">
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -159,14 +165,9 @@
           this.isGraphShowed = !this.isGraphShowed         
         }
       },
-      
-      updatePrompts(){
-        console.log(this.listOfAllValues.indexOf(this.ticker))
 
-      },
 
-      async getValues(){
-             
+      async getValues(){             
         const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
         const data = await coinList.json()        
         for (var key in data.Data){
@@ -195,11 +196,17 @@
       }
     },
 
+      watch: {
+         ticker(ticker) {        
+          console.log(ticker)
+             
+        }
+      },
+
     created: function () {
       setTimeout(() => {
         this.loadingPage = !this.loadingPage
-        
-      }, 500)
+        }, 500)
       
       setInterval(async() =>{      
         if (this.tickers.length !== 0){
@@ -212,6 +219,8 @@
       }, 9000)
 
       this.getValues()
+
+      
            
     }
   }
