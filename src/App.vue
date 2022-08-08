@@ -173,7 +173,6 @@
           this.listOfAllValues.push(data.Data[key].Symbol)
         }
         this.listOfAllValues.sort()
-        console.log(this.listOfAllValues)
       },
     },
 
@@ -210,6 +209,7 @@
           }
         }
       }, 9000)
+      
 
       this.getValues()
            
