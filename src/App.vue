@@ -62,7 +62,7 @@
 
         <div v-for="ticker in tickers" :key="ticker.name" 
         
-        @click="selectedTicker=ticker.name; toggleGraph(ticker)"
+        @click="selectedTicker=ticker.name; toggleGraph(ticker); updateGrath()"
         :class="{['border-4'] : selectedTicker===ticker.name}" 
         class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer">
           <div class="px-4 py-5 sm:p-6 text-center">
@@ -96,16 +96,14 @@
           {{this.selectedTicker}} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
-          <div class="bg-purple-800 border w-10 h-24"></div>
-          <div class="bg-purple-800 border w-10 h-32"></div>
-          <div class="bg-purple-800 border w-10 h-48"></div>
-          <div class="bg-purple-800 border w-10 h-16"></div>
-          <div class="bg-purple-800 border w-10 h-24"></div>
-          <div class="bg-purple-800 border w-10 h-32"></div>
-          <div class="bg-purple-800 border w-10 h-5"></div>
-          <div class="bg-purple-800 border w-10 h-5"></div>
-          <div class="bg-purple-800 border w-10 h-5"></div>
-
+          <div
+          v-for="(value, index) in grath"
+          :key="index"
+          :style="{
+            height: `${value}rem`
+          }"
+          
+          class="bg-purple-800 border w-10"></div>          
         </div>
         <button @click="toggleGraph" type="button" class="absolute top-0 right-0">
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -166,6 +164,46 @@
         }
       },
 
+      getClosestTickerFromList(mark){
+        let start = 0
+        let end = this.listOfAllValues.length
+        let middle = Math.floor(start + (end - start)/2)
+
+        while(end - start > 1){
+          let thing = this.listOfAllValues[middle]
+            if(mark > thing){
+              start = middle
+            }
+            else{
+              end = middle
+            }
+            middle = Math.floor(start + (end - start)/2)
+            
+        }
+        return middle+1
+      },
+      
+      updateGrath(){
+        let rawValues = this.tickers.find(t => t.name == this.selectedTicker).value
+        let maxValue = Math.max(...rawValues)
+        let minValue = Math.min(...rawValues)
+        let result = rawValues.slice()
+        let amplitude = maxValue - minValue
+        for (let i = 0; i < result.length; i++){
+          if(result[i] === maxValue){
+            result[i] = 16
+          }
+          else if(result[i] === minValue){
+            result[i] = 1
+          } else{
+            result[i] = Math.floor((result[i] - minValue)/amplitude*15) +1
+          }
+        }
+
+        this.grath = result
+        console.log(result)
+      },
+
 
       async getValues(){             
         const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
@@ -182,23 +220,26 @@
         loadingPage: true,
         prompts: ['BTC', 'DOGE', 'BCH', 'CHD'],
         isAlreadyAddedError: false,
-        selectedTicker: "BTC",
+        selectedTicker: "",
         ticker: "",
         key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
-        isGraphShowed: true,
+        isGraphShowed: false,
         listOfAllValues: [],
-        tickers: [
-          {name: "BTC", value: [69]},
-          // {name: "DOGE", value: [420]},
-          // {name: "JOPA", value: [322]}
-        ]
+        tickers: [],
+        grath: []
       }
     },
 
       watch: {
-         ticker(ticker) {        
-          console.log(ticker)
-             
+         ticker(ticker) {
+          if(this.ticker.length != 0){
+            ticker =  ticker.toUpperCase()
+            let index = this.getClosestTickerFromList(ticker)
+            this.prompts = [this.listOfAllValues[index],this.listOfAllValues[index + 1],this.listOfAllValues[index + 2],this.listOfAllValues[index+3]]       
+          }
+          else{
+            this.prompts = ['BTC', 'DOGE', 'BCH', 'CHD']
+          }
         }
       },
 
@@ -214,8 +255,9 @@
             const data = await f.json()
             this.tickers.find(t => t.name == item.name).value.push(data.USD)  
           }
+          this.updateGrath()
         }
-      }, 9000)
+      }, 3000)
       
 
       this.getValues()
