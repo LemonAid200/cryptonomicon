@@ -60,9 +60,8 @@
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
 
-        <div v-for="ticker in tickers" :key="ticker.name" 
-        
-        @click="selectedTicker=ticker.name; toggleGraph(ticker); updateGrath()"
+        <div v-for="ticker in tickers" :key="ticker.name"        
+        @click="selectedTicker=ticker.name; toggleGraph(ticker); updateGraph()"
         :class="{['border-4'] : selectedTicker===ticker.name}" 
         class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer">
           <div class="px-4 py-5 sm:p-6 text-center">
@@ -97,7 +96,7 @@
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-          v-for="(value, index) in grath"
+          v-for="(value, index) in graph"
           :key="index"
           :style="{
             height: `${value}rem`
@@ -134,6 +133,7 @@
         this.tickers.forEach((item) => {
           if (item.name == newTicker.name){
             this.isAlreadyAddedError = true
+            this.ticker = ''
             return
             }
         })
@@ -177,36 +177,41 @@
             else{
               end = middle
             }
-            middle = Math.floor(start + (end - start)/2)
-            
+            middle = Math.floor(start + (end - start)/2)            
         }
         return middle+1
       },
+
+      async updateValues(){
+          for (const item of this.tickers) {
+              const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`)
+              const data = await f.json()
+              this.tickers.find(t => t.name == item.name).value.push(data.USD)  
+          }
+      },
       
-      updateGrath(){
+      updateGraph(){
         let rawValues = this.tickers.find(t => t.name == this.selectedTicker).value
         let maxValue = Math.max(...rawValues)
         let minValue = Math.min(...rawValues)
-        let result = rawValues.slice()
+        let graphBarsHeigt = rawValues.slice()
         let amplitude = maxValue - minValue
-        for (let i = 0; i < result.length; i++){
-          if(result[i] === maxValue){
-            result[i] = 16
+        for (let i = 0; i < graphBarsHeigt.length; i++){
+          if(graphBarsHeigt[i] === maxValue){
+            graphBarsHeigt[i] = 16
           }
-          else if(result[i] === minValue){
-            result[i] = 1
+          else if(graphBarsHeigt[i] === minValue){
+            graphBarsHeigt[i] = 1
           } else{
-            result[i] = Math.floor((result[i] - minValue)/amplitude*15) +1
+            graphBarsHeigt[i] = Math.floor((graphBarsHeigt[i] - minValue)/amplitude*15) +1
           }
         }
-
-        this.grath = result
-        console.log(result)
+        this.graph = graphBarsHeigt       
       },
 
 
       async getValues(){             
-        const coinList = await fetch('https://min-api.cryptocompare.com/data/all/coinlist?summary=true')
+        const coinList = await fetch(this.allValuesLink)
         const data = await coinList.json()        
         for (var key in data.Data){
           this.listOfAllValues.push(data.Data[key].Symbol)
@@ -218,15 +223,17 @@
     data() {
       return {
         loadingPage: true,
-        prompts: ['BTC', 'DOGE', 'BCH', 'CHD'],
+        prompts: [],
+        defaultPrompts: ['BTC', 'DOGE', 'BCH', 'CHD'],
         isAlreadyAddedError: false,
         selectedTicker: "",
         ticker: "",
         key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
+        allValuesLink: 'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
         isGraphShowed: false,
         listOfAllValues: [],
         tickers: [],
-        grath: []
+        graph: []
       }
     },
 
@@ -238,7 +245,7 @@
             this.prompts = [this.listOfAllValues[index],this.listOfAllValues[index + 1],this.listOfAllValues[index + 2],this.listOfAllValues[index+3]]       
           }
           else{
-            this.prompts = ['BTC', 'DOGE', 'BCH', 'CHD']
+            this.prompts = this.defaultPrompts
           }
         }
       },
@@ -246,21 +253,20 @@
     created: function () {
       setTimeout(() => {
         this.loadingPage = !this.loadingPage
-        }, 500)
-      
-      setInterval(async() =>{      
-        if (this.tickers.length !== 0){
-          for (const item of this.tickers) {
-            const f = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`)
-            const data = await f.json()
-            this.tickers.find(t => t.name == item.name).value.push(data.USD)  
-          }
-          this.updateGrath()
-        }
-      }, 3000)
-      
+        }, 400)
 
       this.getValues()
+            
+      setInterval(async() =>{      
+        if (this.tickers.length !== 0){
+          this.updateValues()
+          this.updateGraph()
+        }
+      }, 3000)
+
+      this.prompts = this.defaultPrompts
+      
+
 
       
            
