@@ -262,7 +262,7 @@
           this.updateValues()
           this.updateGraph()
         }
-      }, 3000)
+      }, 5000)
 
       this.prompts = this.defaultPrompts
       
