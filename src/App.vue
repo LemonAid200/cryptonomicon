@@ -32,7 +32,7 @@
             <div class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap">
               <span v-for="prompt in prompts" :key="prompt" 
                  
-                 @click="isAlreadyAddedError = false; addNewTicker(event, tickerName = prompt)"
+                 @click="isAlreadyAddedError = false; ticker = prompt; addNewTicker()"
                  class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer">
                 {{prompt}}
               </span>
@@ -125,19 +125,17 @@
     name: "app",
     components: {},
     methods: {
-      addNewTicker(event, tickerName = false){
-        if (tickerName) this.ticker = tickerName
+
+      addNewTicker(){
+        if (this.ticker == ''){return}
         this.ticker = this.ticker.toUpperCase()
-        const newTicker = {name: this.ticker, value: []}
-        if (newTicker.name == ''){return}
         this.tickers.forEach((item) => {
-          if (item.name == newTicker.name){
+          if (item.name == this.ticker){
             this.isAlreadyAddedError = true
-            this.ticker = ''
             return
-            }
+          }
         })
-        if (this.isAlreadyAddedError){return}
+        const newTicker = {name: this.ticker, value: []}
         this.tickers.push(newTicker)       
         this.ticker = ''
       },
