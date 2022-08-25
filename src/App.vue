@@ -129,17 +129,21 @@
       addNewTicker(){
         if (this.ticker == ''){return}
         this.ticker = this.ticker.toUpperCase()
+
         this.tickers.forEach((item) => {
           if (item.name == this.ticker){
             this.isAlreadyAddedError = true
             return
           }
         })
-        const newTicker = {name: this.ticker, value: []}
-        this.tickers.push(newTicker)       
+        if (this.isAlreadyAddedError === false){
+          const newTicker = {name: this.ticker, value: []}        
+          this.tickers.push(newTicker)   
+        }
+    
         this.ticker = ''
       },
-
+      
       deleteTicker(tickerToDelete){
         let i = 0
         this.tickers.forEach((item) => {
