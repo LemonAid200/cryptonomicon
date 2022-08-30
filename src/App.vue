@@ -321,6 +321,19 @@ export default {
         .filter((ticker) => ticker.name.includes(this.filter.toUpperCase()))
         .slice(start, end);
     },
+
+    setFilterAndPageFromURL() {
+      const windowData = Object.fromEntries(
+        new URL(window.location).searchParams.entries()
+      );
+      if (windowData.filter) {
+        this.filter = windowData.filter;
+      }
+      if (windowData.page) {
+        this.page = windowData.page;
+      }
+      console.log("created");
+    },
   },
 
   data() {
@@ -361,7 +374,7 @@ export default {
 
     filter() {
       this.page = 1;
-      window.history.pushState(
+      history.pushState(
         null,
         document.title,
         `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
@@ -381,6 +394,8 @@ export default {
     setTimeout(() => {
       this.loadingPage = !this.loadingPage;
     }, 400);
+
+    this.setFilterAndPageFromURL();
 
     this.getValues();
     this.getTickersFromLocalStorage();
