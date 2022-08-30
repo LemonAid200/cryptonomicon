@@ -364,7 +364,6 @@ export default {
       window.history.pushState(
         null,
         document.title,
-        window.location,
         `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
       );
     },
@@ -373,7 +372,6 @@ export default {
       window.history.pushState(
         null,
         document.title,
-        window.location,
         `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
       );
     },
