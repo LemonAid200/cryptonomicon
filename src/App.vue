@@ -87,7 +87,7 @@
         </button>
       </section>
       <div>
-        Фильтр: <input v-model="filter" /> <br />
+        Фильтр: <input v-model="filter" @input='page =1'/> <br />
         <button
           class="my-4 inline-flex items-center py-2 px-4 mx-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           v-if="page > 1"
@@ -107,7 +107,7 @@
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div
-          v-for="ticker in filteredTickes()"
+          v-for="ticker in filteredTickers()"
           :key="ticker.name"
           @click="
             selectedTicker = ticker.name;
@@ -197,221 +197,218 @@
 
 <script>
 export default {
-  name: "app",
+  name: 'app',
   components: {},
   methods: {
-    addNewTicker() {
-      if (this.ticker == "") {
-        return;
+    addNewTicker () {
+      if (this.ticker === '') {
+        return
       }
-      this.ticker = this.ticker.toUpperCase();
+      this.ticker = this.ticker.toUpperCase()
 
       this.tickers.forEach((item) => {
-        if (item.name == this.ticker) {
-          this.isAlreadyAddedError = true;
-          return;
+        if (item.name === this.ticker) {
+          this.isAlreadyAddedError = true
         }
-      });
+      })
       if (this.isAlreadyAddedError === false) {
-        const newTicker = { name: this.ticker, value: [] };
-        this.tickers.push(newTicker);
-        this.filter = "";
+        const newTicker = { name: this.ticker, value: [] }
+        this.tickers.push(newTicker)
+        this.filter = ''
       }
 
-      this.ticker = "";
+      this.ticker = ''
       localStorage.setItem(
-        "cryptonomicon-list-of-chosen-values",
+        'cryptonomicon-list-of-chosen-values',
         JSON.stringify(this.tickers)
-      );
+      )
     },
 
-    deleteTicker(tickerToDelete) {
-      let i = 0;
+    deleteTicker (tickerToDelete) {
+      let i = 0
       this.tickers.forEach((item) => {
-        if (item.name == tickerToDelete.name) {
-          this.tickers.splice(i, 1);
-          if (this.ticker == tickerToDelete.name) {
-            this.isAlreadyAddedError = false;
+        if (item.name === tickerToDelete.name) {
+          this.tickers.splice(i, 1)
+          if (this.ticker === tickerToDelete.name) {
+            this.isAlreadyAddedError = false
           }
         }
-        i += 1;
-      });
+        i += 1
+      })
       localStorage.setItem(
-        "cryptonomicon-list-of-chosen-values",
+        'cryptonomicon-list-of-chosen-values',
         JSON.stringify(this.tickers)
-      );
+      )
     },
 
-    toggleGraph(ticker) {
+    toggleGraph (ticker) {
       if (ticker.name) {
-        this.isGraphShowed = true;
+        this.isGraphShowed = true
       } else {
-        this.isGraphShowed = !this.isGraphShowed;
+        this.isGraphShowed = !this.isGraphShowed
       }
     },
 
-    getClosestTickerFromList(mark) {
-      let start = 0;
-      let end = this.listOfAllValues.length;
-      let middle = Math.floor(start + (end - start) / 2);
+    getClosestTickerFromList (mark) {
+      let start = 0
+      let end = this.listOfAllValues.length
+      let middle = Math.floor(start + (end - start) / 2)
 
       while (end - start > 1) {
-        let thing = this.listOfAllValues[middle];
+        const thing = this.listOfAllValues[middle]
         if (mark > thing) {
-          start = middle;
+          start = middle
         } else {
-          end = middle;
+          end = middle
         }
-        middle = Math.floor(start + (end - start) / 2);
+        middle = Math.floor(start + (end - start) / 2)
       }
-      return middle + 1;
+      return middle + 1
     },
 
-    async updateValues() {
-      for (const item of this.tickers) {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`
-        );
-        const data = await f.json();
-        this.tickers.find((t) => t.name == item.name).value.push(data.USD);
-      }
-    },
-
-    updateGraph() {
-      let rawValues = this.tickers.find(
-        (t) => t.name == this.selectedTicker
-      ).value;
-      let maxValue = Math.max(...rawValues);
-      let minValue = Math.min(...rawValues);
-      let graphBarsHeigt = rawValues.slice();
-      let amplitude = maxValue - minValue;
-      for (let i = 0; i < graphBarsHeigt.length; i++) {
-        if (graphBarsHeigt[i] === maxValue) {
-          graphBarsHeigt[i] = 16;
-        } else if (graphBarsHeigt[i] === minValue) {
-          graphBarsHeigt[i] = 1;
-        } else {
-          graphBarsHeigt[i] =
-            Math.floor(((graphBarsHeigt[i] - minValue) / amplitude) * 15) + 1;
+    async updateValues () {
+      if (this.tickers.length > 0) {
+        for (const item of this.tickers) {
+          const f = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`
+          )
+          const data = await f.json()
+          this.tickers.find((t) => t.name === item.name).value.push(data.USD)
         }
       }
-      this.graph = graphBarsHeigt;
     },
 
-    async getValues() {
-      const coinList = await fetch(this.allValuesLink);
-      const data = await coinList.json();
-      for (var key in data.Data) {
-        this.listOfAllValues.push(data.Data[key].Symbol);
+    updateGraph () {
+      const rawValues = this.tickers.find(
+        (t) => t.name === this.selectedTicker
+      ).value
+      const maxValue = Math.max(...rawValues)
+      const minValue = Math.min(...rawValues)
+      const graphBarsHeight = rawValues.slice()
+      const amplitude = maxValue - minValue
+      for (let i = 0; i < graphBarsHeight.length; i++) {
+        if (graphBarsHeight[i] === maxValue) {
+          graphBarsHeight[i] = 16
+        } else if (graphBarsHeight[i] === minValue) {
+          graphBarsHeight[i] = 1
+        } else {
+          graphBarsHeight[i] =
+            Math.floor(((graphBarsHeight[i] - minValue) / amplitude) * 15) + 1
+        }
       }
-      this.listOfAllValues.sort();
+      this.graph = graphBarsHeight
     },
-    getTickersFromLocalStorage() {
+
+    async getAndSetValues () {
+      const coinList = await fetch(this.allValuesLink)
+      const data = await coinList.json()
+      for (const key in data.Data) {
+        this.listOfAllValues.push(data.Data[key].Symbol)
+      }
+      this.listOfAllValues.sort()
+    },
+    getTickersFromLocalStorage () {
       const tickersData = localStorage.getItem(
-        "cryptonomicon-list-of-chosen-values"
-      );
+        'cryptonomicon-list-of-chosen-values'
+      )
       if (tickersData) {
-        this.tickers = JSON.parse(tickersData);
+        this.tickers = JSON.parse(tickersData)
       }
     },
-    filteredTickes() {
-      const start = (this.page - 1) * 6;
-      const end = this.page * 6;
+    filteredTickers () {
+      const start = (this.page - 1) * 6
+      const end = this.page * 6
       return this.tickers
         .filter((ticker) => ticker.name.includes(this.filter.toUpperCase()))
-        .slice(start, end);
+        .slice(start, end)
     },
 
-    setFilterAndPageFromURL() {
+    setFilterAndPageFromURL () {
       const windowData = Object.fromEntries(
         new URL(window.location).searchParams.entries()
-      );
+      )
       if (windowData.filter) {
-        this.filter = windowData.filter;
+        this.filter = windowData.filter
       }
       if (windowData.page) {
-        this.page = windowData.page;
+        this.page = windowData.page
       }
-      console.log("created");
-    },
+    }
   },
 
-  data() {
+  data () {
     return {
       loadingPage: true,
       prompts: [],
-      defaultPrompts: ["BTC", "DOGE", "BCH", "CHD"],
+      defaultPrompts: ['BTC', 'DOGE', 'BCH', 'CHD'],
       isAlreadyAddedError: false,
-      selectedTicker: "",
-      ticker: "",
-      key: "f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c",
+      selectedTicker: '',
+      ticker: '',
+      key: 'f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c',
       allValuesLink:
-        "https://min-api.cryptocompare.com/data/all/coinlist?summary=true",
+        'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
       isGraphShowed: false,
       listOfAllValues: [],
       tickers: [],
       graph: [],
-      filter: "",
-      page: 1,
-    };
+      filter: '',
+      page: 1
+    }
   },
 
   watch: {
-    ticker(ticker) {
-      if (this.ticker.length != 0) {
-        ticker = ticker.toUpperCase();
-        let index = this.getClosestTickerFromList(ticker);
+    ticker (ticker) {
+      if (this.ticker.length !== 0) {
+        ticker = ticker.toUpperCase()
+        const index = this.getClosestTickerFromList(ticker)
         this.prompts = [
           this.listOfAllValues[index],
           this.listOfAllValues[index + 1],
           this.listOfAllValues[index + 2],
-          this.listOfAllValues[index + 3],
-        ];
+          this.listOfAllValues[index + 3]
+        ]
       } else {
-        this.prompts = this.defaultPrompts;
+        this.prompts = this.defaultPrompts
       }
     },
 
-    filter() {
-      this.page = 1;
-      history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      );
-    },
-
-    page() {
+    filter () {
       window.history.pushState(
         null,
         document.title,
         `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      );
+      )
     },
+
+    page () {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      )
+    }
   },
 
   created: function () {
     setTimeout(() => {
-      this.loadingPage = !this.loadingPage;
-    }, 400);
+      this.loadingPage = !this.loadingPage
+    }, 400)
 
-    this.setFilterAndPageFromURL();
-
-    this.getValues();
-    this.getTickersFromLocalStorage();
+    this.setFilterAndPageFromURL()
+    this.getAndSetValues()
+    this.getTickersFromLocalStorage()
+    this.prompts = this.defaultPrompts
 
     setInterval(async () => {
       if (this.tickers.length !== 0) {
-        this.updateValues();
+        this.updateValues()
         if (this.selectedTicker) {
-          this.updateGraph();
+          this.updateGraph()
         }
       }
-    }, 5000);
-
-    this.prompts = this.defaultPrompts;
-  },
-};
+    }, 5000)
+  }
+}
 </script>
 
 <style src="./app.css"></style>
