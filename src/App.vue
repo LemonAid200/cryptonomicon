@@ -97,7 +97,7 @@
         </button>
         <button
           class="my-4 inline-flex items-center py-2 px-4 mx-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-          v-if="page < tickers.length / 6"
+          v-if="hasNextPage"
           @click="page++"
         >
           Вперед
@@ -107,7 +107,7 @@
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div
-          v-for="ticker in filteredTickers()"
+          v-for="ticker in filteredTickers"
           :key="ticker.name"
           @click="
             selectedTicker = ticker.name;
@@ -315,13 +315,6 @@ export default {
         this.tickers = JSON.parse(tickersData)
       }
     },
-    filteredTickers () {
-      const start = (this.page - 1) * 6
-      const end = this.page * 6
-      return this.tickers
-        .filter((ticker) => ticker.name.includes(this.filter.toUpperCase()))
-        .slice(start, end)
-    },
 
     setFilterAndPageFromURL () {
       const windowData = Object.fromEntries(
@@ -333,6 +326,21 @@ export default {
       if (windowData.page) {
         this.page = windowData.page
       }
+    }
+  },
+
+  computed: {
+
+    filteredTickers () {
+      const start = (this.page - 1) * 6
+      const end = this.page * 6
+      return this.tickers
+        .filter((ticker) => ticker.name.includes(this.filter.toUpperCase()))
+        .slice(start, end)
+    },
+    hasNextPage () {
+      const end = this.page * 6
+      return end > this.tickers.length
     }
   },
 
