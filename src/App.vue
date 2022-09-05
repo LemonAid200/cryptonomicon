@@ -218,9 +218,11 @@ export default {
       }
 
       this.ticker = ''
+      const tickersWithNullValue = []
+      this.tickers.forEach(item => tickersWithNullValue.push({ name: item.name, value: [] }))
       localStorage.setItem(
         'cryptonomicon-list-of-chosen-values',
-        JSON.stringify(this.tickers)
+        JSON.stringify(tickersWithNullValue)
       )
     },
 
@@ -235,9 +237,12 @@ export default {
         }
         i += 1
       })
+
+      const tickersWithNullValue = []
+      this.tickers.forEach(item => tickersWithNullValue.push({ name: item.name, value: [] }))
       localStorage.setItem(
         'cryptonomicon-list-of-chosen-values',
-        JSON.stringify(this.tickers)
+        JSON.stringify(tickersWithNullValue)
       )
     },
 
