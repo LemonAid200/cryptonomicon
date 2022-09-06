@@ -34,7 +34,6 @@
               >Тикер</label
             >
             <div class="mt-1 relative rounded-md shadow-md">
-              <!-- will add an updater of prompts later -->
               <input
                 v-model="ticker"
                 @keydown="isAlreadyAddedError = false"
@@ -103,7 +102,7 @@
           Вперед
         </button>
       </div>
-      <hr v-if="tickers.length" class="w-full border-t border-gray-600 my-4" />
+      <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4" />
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div
@@ -146,7 +145,7 @@
         </div>
       </dl>
 
-      <hr v-if="tickers.length" class="w-full border-t border-gray-600 my-4" />
+      <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4" />
 
       <section v-if="selectedTicker" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
@@ -205,14 +204,14 @@ export default {
       }
       this.ticker = this.ticker.toUpperCase()
 
-      this.tickers.forEach((item) => {
+      this.addedTickers.forEach((item) => {
         if (item.name === this.ticker) {
           this.isAlreadyAddedError = true
         }
       })
       if (this.isAlreadyAddedError === false) {
         const newTicker = { name: this.ticker, value: [] }
-        this.tickers.push(newTicker)
+        this.addedTickers.push(newTicker)
         this.filter = ''
       }
 
@@ -221,7 +220,7 @@ export default {
     },
 
     deleteTicker (tickerToDelete) {
-      this.tickers = this.tickers.filter(ticker => ticker !== tickerToDelete)
+      this.addedTickers = this.addedTickers.filter(ticker => ticker !== tickerToDelete)
 
       if (tickerToDelete.name === this.selectedTicker) {
         this.selectedTicker = ''
@@ -231,7 +230,7 @@ export default {
 
     updateLocalStorage () {
       const tickersWithNullValue = []
-      this.tickers.forEach(item => tickersWithNullValue.push({ name: item.name, value: [] }))
+      this.addedTickers.forEach(item => tickersWithNullValue.push({ name: item.name, value: [] }))
       localStorage.setItem(
         'cryptonomicon-list-of-chosen-values',
         JSON.stringify(tickersWithNullValue)
@@ -256,13 +255,15 @@ export default {
     },
 
     async updateValues () {
-      if (this.tickers.length > 0) {
-        for (const item of this.tickers) {
+      if (this.addedTickers.length > 0) {
+        for (const item of this.addedTickers) {
           const f = await fetch(
             `https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`
           )
           const data = await f.json()
-          this.tickers.find((t) => t.name === item.name).value.push(data.USD)
+          if (data.USD) {
+            this.addedTickers.find((t) => t.name === item.name).value.push(data.USD)
+          }
         }
       }
     },
@@ -280,7 +281,7 @@ export default {
         'cryptonomicon-list-of-chosen-values'
       )
       if (tickersData) {
-        this.tickers = JSON.parse(tickersData)
+        this.addedTickers = JSON.parse(tickersData)
       }
     },
 
@@ -307,7 +308,7 @@ export default {
     },
 
     filteredTickers () {
-      return this.tickers
+      return this.addedTickers
         .filter((ticker) => ticker.name.includes(this.filter.toUpperCase()))
     },
 
@@ -316,50 +317,62 @@ export default {
     },
 
     hasNextPage () {
-      return this.endIndex < this.tickers.length
+      return this.endIndex < this.addedTickers.length
     },
+
     normalizedGraph () {
-      if (this.tickers.length > 0) {
-        const rawValues = this.tickers.find(
-          (t) => t.name === this.selectedTicker
-        ).value
-        const maxValue = Math.max(...rawValues)
-        const minValue = Math.min(...rawValues)
-        const graphBarsHeight = rawValues.slice()
-        const amplitude = maxValue - minValue
+      if (!this.selectedTicker) return []
+      const rawValues = this.addedTickers.find(
+        (t) => t.name === this.selectedTicker
+      ).value
+      if (rawValues.length === 0) return []
+      const maxValue = Math.max(...rawValues)
+      const minValue = Math.min(...rawValues)
+      const graphBarsHeight = rawValues.slice()
+      const amplitude = maxValue - minValue
 
-        for (let i = 0; i < graphBarsHeight.length; i++) {
-          if (maxValue === minValue) {
-            graphBarsHeight[i] = 8
-            continue
-          }
-          if (graphBarsHeight[i] === maxValue) {
-            graphBarsHeight[i] = 16
-          } else if (graphBarsHeight[i] === minValue) {
-            graphBarsHeight[i] = 1
-          } else {
-            graphBarsHeight[i] =
+      for (let i = 0; i < graphBarsHeight.length; i++) {
+        if (maxValue === minValue) {
+          graphBarsHeight[i] = 8
+          continue
+        }
+        if (graphBarsHeight[i] === maxValue) {
+          graphBarsHeight[i] = 16
+        } else if (graphBarsHeight[i] === minValue) {
+          graphBarsHeight[i] = 1
+        } else {
+          graphBarsHeight[i] =
             Math.floor(((graphBarsHeight[i] - minValue) / amplitude) * 15) + 1
-          }
         }
-
-        const normalizedGraphHeightsAndValues = []
-        for (let i = 0; i < graphBarsHeight.length; i++) {
-          normalizedGraphHeightsAndValues.push({ columnHeight: graphBarsHeight[i], value: rawValues[i] })
-        }
-
-        return normalizedGraphHeightsAndValues
       }
-      return []
-    }
+      const normalizedGraphHeightsAndValues = []
+      for (let i = 0; i < graphBarsHeight.length; i++) {
+        normalizedGraphHeightsAndValues.push({ columnHeight: graphBarsHeight[i], value: rawValues[i] })
+      }
+      return normalizedGraphHeightsAndValues
+    },
 
+    promptsIndex () {
+      return this.getClosestTickerFromList(this.ticker)
+    },
+
+    prompts () {
+      if (this.ticker) {
+        return [
+          this.listOfAllValues[this.promptsIndex],
+          this.listOfAllValues[this.promptsIndex + 1],
+          this.listOfAllValues[this.promptsIndex + 2],
+          this.listOfAllValues[this.promptsIndex + 3]
+        ]
+      } else {
+        return ['BTC', 'DOGE', 'BCH', 'CHD']
+      }
+    }
   },
 
   data () {
     return {
       loadingPage: true,
-      prompts: [],
-      defaultPrompts: ['BTC', 'DOGE', 'BCH', 'CHD'],
       isAlreadyAddedError: false,
       selectedTicker: '',
       ticker: '',
@@ -367,7 +380,7 @@ export default {
       allValuesLink:
         'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
       listOfAllValues: [],
-      tickers: [],
+      addedTickers: [],
       filter: '',
       page: 1
     }
@@ -378,21 +391,6 @@ export default {
     paginatedTickers () {
       if (this.paginatedTickers.length === 0 && this.page > 1) {
         this.page--
-      }
-    },
-
-    ticker (ticker) {
-      if (this.ticker.length !== 0) {
-        ticker = ticker.toUpperCase()
-        const index = this.getClosestTickerFromList(ticker)
-        this.prompts = [
-          this.listOfAllValues[index],
-          this.listOfAllValues[index + 1],
-          this.listOfAllValues[index + 2],
-          this.listOfAllValues[index + 3]
-        ]
-      } else {
-        this.prompts = this.defaultPrompts
       }
     },
 
@@ -421,10 +419,9 @@ export default {
     this.setFilterAndPageFromURL()
     this.getAndSetValues()
     this.updateTickersFromLocalStorage()
-    this.prompts = this.defaultPrompts
 
     setInterval(async () => {
-      if (this.tickers.length !== 0) {
+      if (this.addedTickers.length !== 0) {
         this.updateValues()
       }
     }, 3000)
