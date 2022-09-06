@@ -424,7 +424,7 @@ export default {
       if (this.addedTickers.length !== 0) {
         this.updateValues()
       }
-    }, 3000)
+    }, 6000)
   }
 }
 </script>
