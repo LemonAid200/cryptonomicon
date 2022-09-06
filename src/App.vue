@@ -107,12 +107,11 @@
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div
-          v-for="ticker in filteredTickers"
+          v-for="ticker in paginatedTickers"
           :key="ticker.name"
           @click="
             selectedTicker = ticker.name;
-            toggleGraph(ticker);
-            updateGraph();
+
           "
           :class="{ ['border-4']: selectedTicker === ticker.name }"
           class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
@@ -149,22 +148,22 @@
 
       <hr v-if="tickers.length" class="w-full border-t border-gray-600 my-4" />
 
-      <section v-if="isGraphShowed" class="relative">
+      <section v-if="selectedTicker" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ this.selectedTicker }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-            v-for="(value, index) in graph"
+            v-for="(ticker, index) in normalizedGraph"
             :key="index"
             :style="{
-              height: `${value}rem`,
+              height: `${ticker.columnHeight}rem`,
             }"
             class="bg-purple-800 border w-10"
           ></div>
         </div>
         <button
-          @click="toggleGraph"
+          @click="selectedTicker = ''"
           type="button"
           class="absolute top-0 right-0"
         >
@@ -218,40 +217,25 @@ export default {
       }
 
       this.ticker = ''
-      const tickersWithNullValue = []
-      this.tickers.forEach(item => tickersWithNullValue.push({ name: item.name, value: [] }))
-      localStorage.setItem(
-        'cryptonomicon-list-of-chosen-values',
-        JSON.stringify(tickersWithNullValue)
-      )
+      this.updateLocalStorage()
     },
 
     deleteTicker (tickerToDelete) {
-      let i = 0
-      this.tickers.forEach((item) => {
-        if (item.name === tickerToDelete.name) {
-          this.tickers.splice(i, 1)
-          if (this.ticker === tickerToDelete.name) {
-            this.isAlreadyAddedError = false
-          }
-        }
-        i += 1
-      })
+      this.tickers = this.tickers.filter(ticker => ticker !== tickerToDelete)
 
+      if (tickerToDelete.name === this.selectedTicker) {
+        this.selectedTicker = ''
+      }
+      this.updateLocalStorage()
+    },
+
+    updateLocalStorage () {
       const tickersWithNullValue = []
       this.tickers.forEach(item => tickersWithNullValue.push({ name: item.name, value: [] }))
       localStorage.setItem(
         'cryptonomicon-list-of-chosen-values',
         JSON.stringify(tickersWithNullValue)
       )
-    },
-
-    toggleGraph (ticker) {
-      if (ticker.name) {
-        this.isGraphShowed = true
-      } else {
-        this.isGraphShowed = !this.isGraphShowed
-      }
     },
 
     getClosestTickerFromList (mark) {
@@ -283,27 +267,6 @@ export default {
       }
     },
 
-    updateGraph () {
-      const rawValues = this.tickers.find(
-        (t) => t.name === this.selectedTicker
-      ).value
-      const maxValue = Math.max(...rawValues)
-      const minValue = Math.min(...rawValues)
-      const graphBarsHeight = rawValues.slice()
-      const amplitude = maxValue - minValue
-      for (let i = 0; i < graphBarsHeight.length; i++) {
-        if (graphBarsHeight[i] === maxValue) {
-          graphBarsHeight[i] = 16
-        } else if (graphBarsHeight[i] === minValue) {
-          graphBarsHeight[i] = 1
-        } else {
-          graphBarsHeight[i] =
-            Math.floor(((graphBarsHeight[i] - minValue) / amplitude) * 15) + 1
-        }
-      }
-      this.graph = graphBarsHeight
-    },
-
     async getAndSetValues () {
       const coinList = await fetch(this.allValuesLink)
       const data = await coinList.json()
@@ -312,7 +275,7 @@ export default {
       }
       this.listOfAllValues.sort()
     },
-    getTickersFromLocalStorage () {
+    updateTickersFromLocalStorage () {
       const tickersData = localStorage.getItem(
         'cryptonomicon-list-of-chosen-values'
       )
@@ -335,18 +298,61 @@ export default {
   },
 
   computed: {
+    startIndex () {
+      return (this.page - 1) * 6
+    },
+
+    endIndex () {
+      return this.page * 6
+    },
 
     filteredTickers () {
-      const start = (this.page - 1) * 6
-      const end = this.page * 6
       return this.tickers
         .filter((ticker) => ticker.name.includes(this.filter.toUpperCase()))
-        .slice(start, end)
     },
+
+    paginatedTickers () {
+      return this.filteredTickers.slice(this.startIndex, this.endIndex)
+    },
+
     hasNextPage () {
-      const end = this.page * 6
-      return end > this.tickers.length
+      return this.endIndex < this.tickers.length
+    },
+    normalizedGraph () {
+      if (this.tickers.length > 0) {
+        const rawValues = this.tickers.find(
+          (t) => t.name === this.selectedTicker
+        ).value
+        const maxValue = Math.max(...rawValues)
+        const minValue = Math.min(...rawValues)
+        const graphBarsHeight = rawValues.slice()
+        const amplitude = maxValue - minValue
+
+        for (let i = 0; i < graphBarsHeight.length; i++) {
+          if (maxValue === minValue) {
+            graphBarsHeight[i] = 8
+            continue
+          }
+          if (graphBarsHeight[i] === maxValue) {
+            graphBarsHeight[i] = 16
+          } else if (graphBarsHeight[i] === minValue) {
+            graphBarsHeight[i] = 1
+          } else {
+            graphBarsHeight[i] =
+            Math.floor(((graphBarsHeight[i] - minValue) / amplitude) * 15) + 1
+          }
+        }
+
+        const normalizedGraphHeightsAndValues = []
+        for (let i = 0; i < graphBarsHeight.length; i++) {
+          normalizedGraphHeightsAndValues.push({ columnHeight: graphBarsHeight[i], value: rawValues[i] })
+        }
+
+        return normalizedGraphHeightsAndValues
+      }
+      return []
     }
+
   },
 
   data () {
@@ -360,16 +366,21 @@ export default {
       key: 'f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c',
       allValuesLink:
         'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
-      isGraphShowed: false,
       listOfAllValues: [],
       tickers: [],
-      graph: [],
       filter: '',
       page: 1
     }
   },
 
   watch: {
+
+    paginatedTickers () {
+      if (this.paginatedTickers.length === 0 && this.page > 1) {
+        this.page--
+      }
+    },
+
     ticker (ticker) {
       if (this.ticker.length !== 0) {
         ticker = ticker.toUpperCase()
@@ -409,17 +420,14 @@ export default {
 
     this.setFilterAndPageFromURL()
     this.getAndSetValues()
-    this.getTickersFromLocalStorage()
+    this.updateTickersFromLocalStorage()
     this.prompts = this.defaultPrompts
 
     setInterval(async () => {
       if (this.tickers.length !== 0) {
         this.updateValues()
-        if (this.selectedTicker) {
-          this.updateGraph()
-        }
       }
-    }, 5000)
+    }, 3000)
   }
 }
 </script>
