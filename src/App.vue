@@ -50,7 +50,6 @@
                 v-for="prompt in prompts"
                 :key="prompt"
                 @click="
-                  isAlreadyAddedError = false,
                   ticker = prompt,
                   addNewTicker()
                 "
@@ -202,6 +201,7 @@ export default {
   components: {},
   methods: {
     addNewTicker () {
+      this.isAlreadyAddedError = false
       if (this.ticker === '') {
         return
       }
@@ -214,12 +214,11 @@ export default {
       })
       if (this.isAlreadyAddedError === false) {
         const newTicker = { name: this.ticker, value: [] }
-        this.addedTickers.push(newTicker)
+        this.addedTickers = [...this.addedTickers, newTicker]
         this.filter = ''
       }
 
       this.ticker = ''
-      this.updateLocalStorage()
     },
 
     deleteTicker (tickerToDelete) {
@@ -230,7 +229,6 @@ export default {
       if (tickerToDelete.name === this.selectedTicker) {
         this.selectedTicker = ''
       }
-      this.updateLocalStorage()
     },
 
     updateLocalStorage () {
@@ -244,14 +242,15 @@ export default {
       )
     },
 
-    getClosestTickerFromList (mark) {
+    getClosestTickerFromList (tickerName) {
+      tickerName = tickerName.toUpperCase()
       let start = 0
       let end = this.listOfAllValues.length
       let middle = Math.floor(start + (end - start) / 2)
 
       while (end - start > 1) {
-        const thing = this.listOfAllValues[middle]
-        if (mark > thing) {
+        const comparedTickerName = this.listOfAllValues[middle].toUpperCase()
+        if (tickerName > comparedTickerName) {
           start = middle
         } else {
           end = middle
@@ -271,7 +270,7 @@ export default {
           if (data.USD) {
             this.addedTickers
               .find((t) => t.name === item.name)
-              .value.push(data.USD)
+              .value?.push(data.USD)
           }
         }
       }
@@ -283,7 +282,9 @@ export default {
       for (const key in data.Data) {
         this.listOfAllValues.push(data.Data[key].Symbol)
       }
-      this.listOfAllValues.sort()
+      this.listOfAllValues.sort(function (a, b) {
+        return a.toLowerCase().localeCompare(b.toLowerCase())
+      })
     },
     updateTickersFromLocalStorage () {
       const tickersData = localStorage.getItem(
@@ -380,6 +381,13 @@ export default {
       } else {
         return ['BTC', 'DOGE', 'BCH', 'CHD']
       }
+    },
+
+    pageStateOptions () {
+      return {
+        filter: this.filter,
+        page: this.page
+      }
     }
   },
 
@@ -400,26 +408,22 @@ export default {
   },
 
   watch: {
+    addedTickers () {
+      this.updateLocalStorage()
+    },
+
+    pageStateOptions (value) {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
+      )
+    },
+
     paginatedTickers () {
       if (this.paginatedTickers.length === 0 && this.page > 1) {
         this.page--
       }
-    },
-
-    filter () {
-      window.history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      )
-    },
-
-    page () {
-      window.history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      )
     }
   },
 
