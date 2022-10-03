@@ -264,7 +264,7 @@ export default {
       if (this.addedTickers.length > 0) {
         for (const item of this.addedTickers) {
           const f = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.key}`
+            `https://min-api.cryptocompare.com/data/price?fsym=${item.name}&tsyms=USD&api_key=${this.API_Key}`
           )
           const data = await f.json()
           if (data.USD) {
@@ -397,7 +397,7 @@ export default {
       isAlreadyAddedError: false,
       selectedTicker: '',
       ticker: '',
-      key: 'f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c',
+      API_Key: 'f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c',
       allValuesLink:
         'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
       listOfAllValues: [],
