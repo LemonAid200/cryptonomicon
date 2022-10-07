@@ -263,15 +263,19 @@ export default {
 
     async updateValues () {
       if (this.addedTickers.length > 0) {
+        const exchangeData = await loadTicker(this.addedTickers.map(t => t.name))
+        console.log(exchangeData)
         for (const item of this.addedTickers) {
-          const ticker = await loadTicker(item.name)
-          if (ticker.USD) {
-            this.addedTickers
-              .find((t) => t.name === item.name)
-              .value?.push(ticker.USD)
+          console.log(item)
+          if (exchangeData[item.name]) {
+            item.value.push(this.normalizeValue(1 / exchangeData[item.name]))
           }
         }
       }
+    },
+
+    normalizeValue (value) {
+      return value > 1 ? value.toFixed(2) : value.toPrecision(2)
     },
 
     async getAndSetValues () {
