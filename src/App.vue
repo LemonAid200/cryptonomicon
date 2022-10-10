@@ -119,7 +119,7 @@
               {{ ticker.name }} - USD
             </dt>
             <dd class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ ticker.value[ticker.value.length - 1] || '-' }}
+              {{ normalizePrice(ticker.value[ticker.value.length - 1]) || '-' }}
             </dd>
           </div>
           <div class="w-full border-t border-gray-200"></div>
@@ -196,7 +196,8 @@
 </template>
 
 <script>
-import { loadTicker } from './api'
+import { getAllTickerNames, unsubscribeTicker, subscribeToTicker } from './api'
+
 export default {
   name: 'app',
   components: {},
@@ -216,6 +217,9 @@ export default {
       if (this.isAlreadyAddedError === false) {
         const newTicker = { name: this.ticker, value: [] }
         this.addedTickers = [...this.addedTickers, newTicker]
+        subscribeToTicker(newTicker.name, price => {
+          this.updateValues(newTicker.name, price)
+        })
         this.filter = ''
       }
 
@@ -223,6 +227,8 @@ export default {
     },
 
     deleteTicker (tickerToDelete) {
+      unsubscribeTicker(tickerToDelete.name)
+
       this.addedTickers = this.addedTickers.filter(
         (ticker) => ticker !== tickerToDelete
       )
@@ -261,39 +267,30 @@ export default {
       return middle + 1
     },
 
-    async updateValues () {
-      if (this.addedTickers.length > 0) {
-        const exchangeData = await loadTicker(this.addedTickers.map(t => t.name))
-        console.log(exchangeData)
-        for (const item of this.addedTickers) {
-          console.log(item)
-          if (exchangeData[item.name]) {
-            item.value.push(this.normalizeValue(1 / exchangeData[item.name]))
-          }
-        }
-      }
+    updateValues (tickerName, price) {
+      this.addedTickers.find(t => t.name === tickerName).value.push(price)
     },
 
-    normalizeValue (value) {
-      return value > 1 ? value.toFixed(2) : value.toPrecision(2)
+    normalizePrice (value) {
+      if (value) return value > 1 ? value.toFixed(2) : value.toPrecision(2)
+      else return undefined
     },
 
     async getAndSetValues () {
-      const coinList = await fetch(this.allValuesLink)
-      const data = await coinList.json()
-      for (const key in data.Data) {
-        this.listOfAllValues.push(data.Data[key].Symbol)
-      }
-      this.listOfAllValues.sort(function (a, b) {
-        return a.toLowerCase().localeCompare(b.toLowerCase())
-      })
+      this.listOfAllValues = await getAllTickerNames()
     },
+
     updateTickersFromLocalStorage () {
       const tickersData = localStorage.getItem(
         'cryptonomicon-list-of-chosen-values'
       )
       if (tickersData) {
         this.addedTickers = JSON.parse(tickersData)
+        this.addedTickers.forEach(ticker => {
+          subscribeToTicker(ticker.name, price => {
+            this.updateValues(ticker.name, price)
+          })
+        })
       }
     },
 
@@ -399,8 +396,6 @@ export default {
       isAlreadyAddedError: false,
       selectedTicker: '',
       ticker: '',
-      allValuesLink:
-        'https://min-api.cryptocompare.com/data/all/coinlist?summary=true',
       listOfAllValues: [],
       addedTickers: [],
       filter: '',
@@ -436,12 +431,6 @@ export default {
     this.setFilterAndPageFromURL()
     this.getAndSetValues()
     this.updateTickersFromLocalStorage()
-
-    setInterval(async () => {
-      if (this.addedTickers.length !== 0) {
-        this.updateValues()
-      }
-    }, 6000)
   }
 }
 </script>
