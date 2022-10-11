@@ -2,16 +2,6 @@
 const API_Key = 'f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c'
 const allValuesLink = 'https://min-api.cryptocompare.com/data/all/coinlist?summary=true'
 
-// function getNames () {
-//   const names = []
-//   for (const key of tickersHandlers.keys()) {
-//     names.push(key.name)
-//   }
-//     console.log(tickersHandlers)
-//     console.log(names)
-//   return names
-// }
-
 export const loadTickersValues = () => {
   if (tickersHandlers.size === 0) return
   fetch(
@@ -23,10 +13,10 @@ export const loadTickersValues = () => {
       const updatedPrices = Object.fromEntries(
         Object.entries(rawData).map(([key, value]) => [key, value])
       )
-      //   console.log(rawData)
       Object.entries(updatedPrices).forEach(([currency, newPrice]) => {
         const handlers = tickersHandlers.get(currency) ?? []
-        handlers.forEach(fn => fn(newPrice, currency))
+
+        handlers.forEach(fn => fn(1 / newPrice, currency))
       })
     })
 }
