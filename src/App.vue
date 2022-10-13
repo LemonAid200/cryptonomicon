@@ -153,7 +153,7 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ this.selectedTicker }} - USD
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div class="flex items-end border-gray-600 border-b border-l h-64" ref="graph">
           <div
             v-for="(ticker, index) in normalizedGraph"
             :key="index"
@@ -226,6 +226,10 @@ export default {
       this.ticker = ''
     },
 
+    calculateMaxGraphElements () {
+      if (this.$refs.graph) { this.graphMaxAmount = this.$refs.graph.clientWidth / 38 } else this.graphMaxAmount = 1
+    },
+
     deleteTicker (tickerToDelete) {
       unsubscribeTicker(tickerToDelete.name)
 
@@ -269,6 +273,9 @@ export default {
 
     updateValues (tickerName, price) {
       this.addedTickers.find(t => t.name === tickerName).value.push(price)
+      if (this.addedTickers.find(t => t.name === tickerName).value.length > 100) {
+        this.addedTickers.find(t => t.name === tickerName).value.shift()
+      }
     },
 
     normalizePrice (value) {
@@ -362,6 +369,11 @@ export default {
           value: rawValues[i]
         })
       }
+      this.calculateMaxGraphElements()
+      if (normalizedGraphHeightsAndValues.length > this.graphMaxAmount) {
+        return normalizedGraphHeightsAndValues.slice(-this.graphMaxAmount)
+      }
+
       return normalizedGraphHeightsAndValues
     },
 
@@ -392,6 +404,7 @@ export default {
 
   data () {
     return {
+      graphMaxAmount: 1,
       loadingPage: true,
       isAlreadyAddedError: false,
       selectedTicker: '',
@@ -431,6 +444,7 @@ export default {
     this.setFilterAndPageFromURL()
     this.getAndSetValues()
     this.updateTickersFromLocalStorage()
+    window.addEventListener('resize', this.calculateMaxGraphElements)
   }
 }
 </script>
