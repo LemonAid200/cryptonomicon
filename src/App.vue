@@ -63,12 +63,10 @@
             </div>
           </div>
         </div>
-        <button
+        <!-- <button
           type="button"
-          @click="addNewTicker"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
-          <!-- Heroicon name: solid/mail -->
           <svg
             class="-ml-0.5 mr-2 h-6 w-6"
             xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +80,10 @@
             ></path>
           </svg>
           Добавить
-        </button>
+        </button> -->
+		<add-button
+			@click="addNewTicker"
+		/>
       </section>
       <div>
         Фильтр: <input v-model="filter" @input="page = 1" /> <br />
@@ -197,255 +198,258 @@
 
 <script>
 import { getAllTickerNames, unsubscribeTicker, subscribeToTicker } from './api'
+import AddButton from './components/AddButton.vue'
 
 export default {
-  name: 'app',
-  components: {},
-  methods: {
-    addNewTicker () {
-      this.isAlreadyAddedError = false
-      if (this.ticker === '') {
-        return
-      }
-      this.ticker = this.ticker.toUpperCase()
+	name: 'app',
+	components: {
+		AddButton
+	},
+	methods: {
+		addNewTicker () {
+			this.isAlreadyAddedError = false
+			if (this.ticker === '') {
+				return
+			}
+			this.ticker = this.ticker.toUpperCase()
 
-      this.addedTickers.forEach((item) => {
-        if (item.name === this.ticker) {
-          this.isAlreadyAddedError = true
-        }
-      })
-      if (this.isAlreadyAddedError === false) {
-        const newTicker = { name: this.ticker, value: [] }
-        this.addedTickers = [...this.addedTickers, newTicker]
-        subscribeToTicker(newTicker.name, price => {
-          this.updateValues(newTicker.name, price)
-        })
-        this.filter = ''
-      }
+			this.addedTickers.forEach((item) => {
+				if (item.name === this.ticker) {
+					this.isAlreadyAddedError = true
+				}
+			})
+			if (this.isAlreadyAddedError === false) {
+				const newTicker = { name: this.ticker, value: [] }
+				this.addedTickers = [...this.addedTickers, newTicker]
+				subscribeToTicker(newTicker.name, price => {
+					this.updateValues(newTicker.name, price)
+				})
+				this.filter = ''
+			}
 
-      this.ticker = ''
-    },
+			this.ticker = ''
+		},
 
-    calculateMaxGraphElements () {
-      if (this.$refs.graph) { this.graphMaxAmount = this.$refs.graph.clientWidth / 38 } else this.graphMaxAmount = 1
-    },
+		calculateMaxGraphElements () {
+			if (this.$refs.graph) { this.graphMaxAmount = this.$refs.graph.clientWidth / 38 } else this.graphMaxAmount = 1
+		},
 
-    deleteTicker (tickerToDelete) {
-      unsubscribeTicker(tickerToDelete.name)
+		deleteTicker (tickerToDelete) {
+			unsubscribeTicker(tickerToDelete.name)
 
-      this.addedTickers = this.addedTickers.filter(
-        (ticker) => ticker !== tickerToDelete
-      )
+			this.addedTickers = this.addedTickers.filter(
+				(ticker) => ticker !== tickerToDelete
+			)
 
-      if (tickerToDelete.name === this.selectedTicker) {
-        this.selectedTicker = ''
-      }
-    },
+			if (tickerToDelete.name === this.selectedTicker) {
+				this.selectedTicker = ''
+			}
+		},
 
-    updateLocalStorage () {
-      const tickersWithNullValue = []
-      this.addedTickers.forEach((item) =>
-        tickersWithNullValue.push({ name: item.name, value: [] })
-      )
-      localStorage.setItem(
-        'cryptonomicon-list-of-chosen-values',
-        JSON.stringify(tickersWithNullValue)
-      )
-    },
+		updateLocalStorage () {
+			const tickersWithNullValue = []
+			this.addedTickers.forEach((item) =>
+				tickersWithNullValue.push({ name: item.name, value: [] })
+			)
+			localStorage.setItem(
+				'cryptonomicon-list-of-chosen-values',
+				JSON.stringify(tickersWithNullValue)
+			)
+		},
 
-    getClosestTickerFromList (tickerName) {
-      tickerName = tickerName.toUpperCase()
-      let start = 0
-      let end = this.listOfAllValues.length
-      let middle = Math.floor(start + (end - start) / 2)
+		getClosestTickerFromList (tickerName) {
+			tickerName = tickerName.toUpperCase()
+			let start = 0
+			let end = this.listOfAllValues.length
+			let middle = Math.floor(start + (end - start) / 2)
 
-      while (end - start > 1) {
-        const comparedTickerName = this.listOfAllValues[middle].toUpperCase()
-        if (tickerName > comparedTickerName) {
-          start = middle
-        } else {
-          end = middle
-        }
-        middle = Math.floor(start + (end - start) / 2)
-      }
-      return middle + 1
-    },
+			while (end - start > 1) {
+				const comparedTickerName = this.listOfAllValues[middle].toUpperCase()
+				if (tickerName > comparedTickerName) {
+					start = middle
+				} else {
+					end = middle
+				}
+				middle = Math.floor(start + (end - start) / 2)
+			}
+			return middle + 1
+		},
 
-    updateValues (tickerName, price) {
-      this.addedTickers.find(t => t.name === tickerName).value.push(price)
-      if (this.addedTickers.find(t => t.name === tickerName).value.length > 100) {
-        this.addedTickers.find(t => t.name === tickerName).value.shift()
-      }
-    },
+		updateValues (tickerName, price) {
+			this.addedTickers.find(t => t.name === tickerName).value.push(price)
+			if (this.addedTickers.find(t => t.name === tickerName).value.length > 100) {
+				this.addedTickers.find(t => t.name === tickerName).value.shift()
+			}
+		},
 
-    normalizePrice (value) {
-      if (value) return value > 1 ? value.toFixed(2) : value.toPrecision(2)
-      else return undefined
-    },
+		normalizePrice (value) {
+			if (value) return value > 1 ? value.toFixed(2) : value.toPrecision(2)
+			else return undefined
+		},
 
-    async getAndSetValues () {
-      this.listOfAllValues = await getAllTickerNames()
-    },
+		async getAndSetValues () {
+			this.listOfAllValues = await getAllTickerNames()
+		},
 
-    updateTickersFromLocalStorage () {
-      const tickersData = localStorage.getItem(
-        'cryptonomicon-list-of-chosen-values'
-      )
-      if (tickersData) {
-        this.addedTickers = JSON.parse(tickersData)
-        this.addedTickers.forEach(ticker => {
-          subscribeToTicker(ticker.name, price => {
-            this.updateValues(ticker.name, price)
-          })
-        })
-      }
-    },
+		updateTickersFromLocalStorage () {
+			const tickersData = localStorage.getItem(
+				'cryptonomicon-list-of-chosen-values'
+			)
+			if (tickersData) {
+				this.addedTickers = JSON.parse(tickersData)
+				this.addedTickers.forEach(ticker => {
+					subscribeToTicker(ticker.name, price => {
+						this.updateValues(ticker.name, price)
+					})
+				})
+			}
+		},
 
-    setFilterAndPageFromURL () {
-      const windowData = Object.fromEntries(
-        new URL(window.location).searchParams.entries()
-      )
-      if (windowData.filter) {
-        this.filter = windowData.filter
-      }
-      if (windowData.page) {
-        this.page = windowData.page
-      }
-    }
-  },
+		setFilterAndPageFromURL () {
+			const windowData = Object.fromEntries(
+				new URL(window.location).searchParams.entries()
+			)
+			if (windowData.filter) {
+				this.filter = windowData.filter
+			}
+			if (windowData.page) {
+				this.page = windowData.page
+			}
+		}
+	},
 
-  computed: {
-    startIndex () {
-      return (this.page - 1) * 6
-    },
+	computed: {
+		startIndex () {
+			return (this.page - 1) * 6
+		},
 
-    endIndex () {
-      return this.page * 6
-    },
+		endIndex () {
+			return this.page * 6
+		},
 
-    filteredTickers () {
-      return this.addedTickers.filter((ticker) =>
-        ticker.name.includes(this.filter.toUpperCase())
-      )
-    },
+		filteredTickers () {
+			return this.addedTickers.filter((ticker) =>
+				ticker.name.includes(this.filter.toUpperCase())
+			)
+		},
 
-    paginatedTickers () {
-      return this.filteredTickers.slice(this.startIndex, this.endIndex)
-    },
+		paginatedTickers () {
+			return this.filteredTickers.slice(this.startIndex, this.endIndex)
+		},
 
-    hasNextPage () {
-      return this.endIndex < this.addedTickers.length
-    },
+		hasNextPage () {
+			return this.endIndex < this.addedTickers.length
+		},
 
-    normalizedGraph () {
-      if (!this.selectedTicker) return []
-      const rawValues = this.addedTickers.find(
-        (t) => t.name === this.selectedTicker
-      ).value
-      if (rawValues.length === 0) return []
-      const maxValue = Math.max(...rawValues)
-      const minValue = Math.min(...rawValues)
-      const graphBarsHeight = rawValues.slice()
-      const amplitude = maxValue - minValue
+		normalizedGraph () {
+			if (!this.selectedTicker) return []
+			const rawValues = this.addedTickers.find(
+				(t) => t.name === this.selectedTicker
+			).value
+			if (rawValues.length === 0) return []
+			const maxValue = Math.max(...rawValues)
+			const minValue = Math.min(...rawValues)
+			const graphBarsHeight = rawValues.slice()
+			const amplitude = maxValue - minValue
 
-      for (let i = 0; i < graphBarsHeight.length; i++) {
-        if (maxValue === minValue) {
-          graphBarsHeight[i] = 8
-          continue
-        }
-        if (graphBarsHeight[i] === maxValue) {
-          graphBarsHeight[i] = 16
-        } else if (graphBarsHeight[i] === minValue) {
-          graphBarsHeight[i] = 1
-        } else {
-          graphBarsHeight[i] =
+			for (let i = 0; i < graphBarsHeight.length; i++) {
+				if (maxValue === minValue) {
+					graphBarsHeight[i] = 8
+					continue
+				}
+				if (graphBarsHeight[i] === maxValue) {
+					graphBarsHeight[i] = 16
+				} else if (graphBarsHeight[i] === minValue) {
+					graphBarsHeight[i] = 1
+				} else {
+					graphBarsHeight[i] =
             Math.floor(((graphBarsHeight[i] - minValue) / amplitude) * 15) + 1
-        }
-      }
-      const normalizedGraphHeightsAndValues = []
-      for (let i = 0; i < graphBarsHeight.length; i++) {
-        normalizedGraphHeightsAndValues.push({
-          columnHeight: graphBarsHeight[i],
-          value: rawValues[i]
-        })
-      }
-      this.calculateMaxGraphElements()
-      if (normalizedGraphHeightsAndValues.length > this.graphMaxAmount) {
-        return normalizedGraphHeightsAndValues.slice(-this.graphMaxAmount)
-      }
+				}
+			}
+			const normalizedGraphHeightsAndValues = []
+			for (let i = 0; i < graphBarsHeight.length; i++) {
+				normalizedGraphHeightsAndValues.push({
+					columnHeight: graphBarsHeight[i],
+					value: rawValues[i]
+				})
+			}
+			this.calculateMaxGraphElements()
+			if (normalizedGraphHeightsAndValues.length > this.graphMaxAmount) {
+				return normalizedGraphHeightsAndValues.slice(-this.graphMaxAmount)
+			}
 
-      return normalizedGraphHeightsAndValues
-    },
+			return normalizedGraphHeightsAndValues
+		},
 
-    promptsIndex () {
-      return this.getClosestTickerFromList(this.ticker)
-    },
+		promptsIndex () {
+			return this.getClosestTickerFromList(this.ticker)
+		},
 
-    prompts () {
-      if (this.ticker) {
-        return [
-          this.listOfAllValues[this.promptsIndex],
-          this.listOfAllValues[this.promptsIndex + 1],
-          this.listOfAllValues[this.promptsIndex + 2],
-          this.listOfAllValues[this.promptsIndex + 3]
-        ]
-      } else {
-        return ['BTC', 'DOGE', 'BCH', 'CHD']
-      }
-    },
+		prompts () {
+			if (this.ticker) {
+				return [
+					this.listOfAllValues[this.promptsIndex],
+					this.listOfAllValues[this.promptsIndex + 1],
+					this.listOfAllValues[this.promptsIndex + 2],
+					this.listOfAllValues[this.promptsIndex + 3]
+				]
+			} else {
+				return ['BTC', 'DOGE', 'BCH', 'CHD']
+			}
+		},
 
-    pageStateOptions () {
-      return {
-        filter: this.filter,
-        page: this.page
-      }
-    }
-  },
+		pageStateOptions () {
+			return {
+				filter: this.filter,
+				page: this.page
+			}
+		}
+	},
 
-  data () {
-    return {
-      graphMaxAmount: 1,
-      loadingPage: true,
-      isAlreadyAddedError: false,
-      selectedTicker: '',
-      ticker: '',
-      listOfAllValues: [],
-      addedTickers: [],
-      filter: '',
-      page: 1
-    }
-  },
+	data () {
+		return {
+			graphMaxAmount: 1,
+			loadingPage: true,
+			isAlreadyAddedError: false,
+			selectedTicker: '',
+			ticker: '',
+			listOfAllValues: [],
+			addedTickers: [],
+			filter: '',
+			page: 1
+		}
+	},
 
-  watch: {
-    addedTickers () {
-      this.updateLocalStorage()
-    },
+	watch: {
+		addedTickers () {
+			this.updateLocalStorage()
+		},
 
-    pageStateOptions (value) {
-      window.history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
-      )
-    },
+		pageStateOptions (value) {
+			window.history.pushState(
+				null,
+				document.title,
+				`${window.location.pathname}?filter=${value.filter}&page=${value.page}`
+			)
+		},
 
-    paginatedTickers () {
-      if (this.paginatedTickers.length === 0 && this.page > 1) {
-        this.page--
-      }
-    }
-  },
+		paginatedTickers () {
+			if (this.paginatedTickers.length === 0 && this.page > 1) {
+				this.page--
+			}
+		}
+	},
 
-  created: function () {
-    setTimeout(() => {
-      this.loadingPage = !this.loadingPage
-    }, 400)
+	created: function () {
+		setTimeout(() => {
+			this.loadingPage = !this.loadingPage
+		}, 400)
 
-    this.setFilterAndPageFromURL()
-    this.getAndSetValues()
-    this.updateTickersFromLocalStorage()
-    window.addEventListener('resize', this.calculateMaxGraphElements)
-  }
+		this.setFilterAndPageFromURL()
+		this.getAndSetValues()
+		this.updateTickersFromLocalStorage()
+		window.addEventListener('resize', this.calculateMaxGraphElements)
+	}
 }
 </script>
 
