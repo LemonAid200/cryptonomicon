@@ -1,72 +1,9 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
-    <div
-      v-if="loadingPage"
-      class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
-    >
-      <svg
-        class="animate-spin -ml-1 mr-3 h-12 w-12 text-white"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          class="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          stroke-width="4"
-        ></circle>
-        <path
-          class="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
-      </svg>
-    </div>
+		<loading-cover v-if="loadingPage"/>
 
     <div class="container">
-      <section>
-        <div class="flex">
-          <div class="max-w-xs">
-            <label for="wallet" class="block text-sm font-medium text-gray-700"
-              >Тикер</label
-            >
-            <div class="mt-1 relative rounded-md shadow-md">
-              <input
-                v-model="ticker"
-                @keydown="isAlreadyAddedError = false"
-                @keydown.enter="addNewTicker"
-                type="text"
-                name="wallet"
-                id="wallet"
-                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-                placeholder="Например DOGE"
-              />
-            </div>
-            <div class="flex bg-white shadow-md p-1 rounded-md flex-wrap">
-              <span
-                v-for="prompt in prompts"
-                :key="prompt"
-                @click="
-                  ticker = prompt,
-                  addNewTicker()
-                "
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                {{ prompt }}
-              </span>
-            </div>
-            <div v-if="isAlreadyAddedError" class="text-sm text-red-600">
-              Такой тикер уже добавлен
-            </div>
-          </div>
-        </div>
-		<add-button
-			@click="addNewTicker"
-		/>
-      </section>
+		<add-ticker @add-new-ticker="addNewTicker" @user-is-inputting="() => {isAlreadyAddedError = false}" v-bind:is-already-added-error="isAlreadyAddedError"/>
       <div>
         Фильтр: <input v-model="filter" @input="page = 1" /> <br />
         <button
@@ -179,29 +116,31 @@
 </template>
 
 <script>
-import { getAllTickerNames, unsubscribeTicker, subscribeToTicker } from './api'
-import AddButton from './components/AddButton.vue'
+import { unsubscribeTicker, subscribeToTicker } from './api'
+import AddTicker from './components/AddTicker.vue'
+import LoadingCover from './components/LoadingCover.vue'
 
 export default {
 	name: 'app',
 	components: {
-		AddButton
+		AddTicker,
+		LoadingCover
 	},
 	methods: {
-		addNewTicker () {
+		addNewTicker (ticker) {
 			this.isAlreadyAddedError = false
-			if (this.ticker === '') {
+			if (ticker === '') {
 				return
 			}
-			this.ticker = this.ticker.toUpperCase()
+			ticker = ticker.toUpperCase()
 
 			this.addedTickers.forEach((item) => {
-				if (item.name === this.ticker) {
+				if (item.name === ticker) {
 					this.isAlreadyAddedError = true
 				}
 			})
 			if (this.isAlreadyAddedError === false) {
-				const newTicker = { name: this.ticker, value: [] }
+				const newTicker = { name: ticker, value: [] }
 				this.addedTickers = [...this.addedTickers, newTicker]
 				subscribeToTicker(newTicker.name, price => {
 					this.updateValues(newTicker.name, price)
@@ -209,7 +148,7 @@ export default {
 				this.filter = ''
 			}
 
-			this.ticker = ''
+			ticker = ''
 		},
 
 		calculateMaxGraphElements () {
@@ -239,24 +178,6 @@ export default {
 			)
 		},
 
-		getClosestTickerFromList (tickerName) {
-			tickerName = tickerName.toUpperCase()
-			let start = 0
-			let end = this.listOfAllValues.length
-			let middle = Math.floor(start + (end - start) / 2)
-
-			while (end - start > 1) {
-				const comparedTickerName = this.listOfAllValues[middle].toUpperCase()
-				if (tickerName > comparedTickerName) {
-					start = middle
-				} else {
-					end = middle
-				}
-				middle = Math.floor(start + (end - start) / 2)
-			}
-			return middle + 1
-		},
-
 		updateValues (tickerName, price) {
 			this.addedTickers.find(t => t.name === tickerName).value.push(price)
 			if (this.addedTickers.find(t => t.name === tickerName).value.length > 100) {
@@ -267,10 +188,6 @@ export default {
 		normalizePrice (value) {
 			if (value) return value > 1 ? value.toFixed(2) : value.toPrecision(2)
 			else return undefined
-		},
-
-		async getAndSetValues () {
-			this.listOfAllValues = await getAllTickerNames()
 		},
 
 		updateTickersFromLocalStorage () {
@@ -291,12 +208,8 @@ export default {
 			const windowData = Object.fromEntries(
 				new URL(window.location).searchParams.entries()
 			)
-			if (windowData.filter) {
-				this.filter = windowData.filter
-			}
-			if (windowData.page) {
-				this.page = windowData.page
-			}
+			this.filter = windowData.filter ?? ''
+			this.page = windowData.page ?? 1
 		}
 	},
 
@@ -363,23 +276,6 @@ export default {
 			return normalizedGraphHeightsAndValues
 		},
 
-		promptsIndex () {
-			return this.getClosestTickerFromList(this.ticker)
-		},
-
-		prompts () {
-			if (this.ticker) {
-				return [
-					this.listOfAllValues[this.promptsIndex],
-					this.listOfAllValues[this.promptsIndex + 1],
-					this.listOfAllValues[this.promptsIndex + 2],
-					this.listOfAllValues[this.promptsIndex + 3]
-				]
-			} else {
-				return ['BTC', 'DOGE', 'BCH', 'CHD']
-			}
-		},
-
 		pageStateOptions () {
 			return {
 				filter: this.filter,
@@ -394,8 +290,6 @@ export default {
 			loadingPage: true,
 			isAlreadyAddedError: false,
 			selectedTicker: '',
-			ticker: '',
-			listOfAllValues: [],
 			addedTickers: [],
 			filter: '',
 			page: 1
@@ -428,7 +322,6 @@ export default {
 		}, 400)
 
 		this.setFilterAndPageFromURL()
-		this.getAndSetValues()
 		this.updateTickersFromLocalStorage()
 		window.addEventListener('resize', this.calculateMaxGraphElements)
 	}
