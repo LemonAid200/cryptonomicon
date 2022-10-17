@@ -29,7 +29,14 @@
       <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4"/>
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div
+			<ticker-card v-for="ticker in paginatedTickers"
+				:key="ticker.name"
+				:ticker="ticker"
+				:isSelected="ticker.name === selectedTicker"
+				@delete-ticker="deleteTicker"
+				@select-ticker="tickerName => selectedTicker = tickerName"
+			/>
+        <!-- <div
           v-for="ticker in paginatedTickers"
           :key="ticker.name"
           @click="selectedTicker = ticker.name"
@@ -63,7 +70,7 @@
               ></path></svg
             >Удалить
           </button>
-        </div>
+        </div> -->
       </dl>
 
       <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4"/>
@@ -84,13 +91,15 @@ import { unsubscribeTicker, subscribeToTicker } from './api'
 import AddTicker from './components/AddTicker.vue'
 import LoadingCover from './components/LoadingCover.vue'
 import GraphPrices from './components/GraphPrices.vue'
+import TickerCard from './components/TickerCard.vue'
 
 export default {
 	name: 'app',
 	components: {
 		AddTicker,
 		LoadingCover,
-		GraphPrices
+		GraphPrices,
+		TickerCard
 	},
 	methods: {
 		addNewTicker (ticker) {
@@ -147,10 +156,7 @@ export default {
 			}
 		},
 
-		normalizePrice (value) {
-			if (value) return value > 1 ? value.toFixed(2) : value.toPrecision(2)
-			else return undefined
-		},
+
 
 		updateTickersFromLocalStorage () {
 			const tickersData = localStorage.getItem(
