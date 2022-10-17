@@ -7,6 +7,7 @@
 				@user-is-inputting="() => {isAlreadyAddedError = false}"
 				:is-already-added-error="isAlreadyAddedError"
 			/>
+
       <div>
         Фильтр: <input v-model="filter" @input="page = 1" /> <br />
         <button
@@ -24,10 +25,8 @@
           Вперед
         </button>
       </div>
-      <hr
-        v-if="addedTickers.length"
-        class="w-full border-t border-gray-600 my-4"
-      />
+
+      <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4"/>
 
       <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div
@@ -67,15 +66,14 @@
         </div>
       </dl>
 
-      <hr
-        v-if="addedTickers.length"
-        class="w-full border-t border-gray-600 my-4"
-      />
+      <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4"/>
+
 			<graph-prices
 				:selected-ticker="selectedTicker"
 				:raw-values="pricesToDisplay"
 				@close-graph="() => selectedTicker = ''"
-				/>
+			/>
+
     </div>
   </div>
 </template>
