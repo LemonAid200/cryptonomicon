@@ -1,7 +1,7 @@
 <template>
-	<section v-if="selectedTicker" class="relative">
+	<section v-if="ticker.name" class="relative">
 		<h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-			{{ this.selectedTicker }} - USD
+			{{ this.ticker.name }} - USD
 		</h3>
 		<div class="flex items-end border-gray-600 border-b border-l h-64" ref="graph">
 			<div
@@ -44,6 +44,7 @@
 </template>
 
 <script>
+
 export default {
 	data () {
 		return {
@@ -51,12 +52,9 @@ export default {
 		}
 	},
 	props: {
-		selectedTicker: {
-			type: String
-		},
-		rawValues: {
-			type: Array,
-			default: () => { return [] }
+		ticker: {
+			type: Object,
+			default: () => { return {} }
 		}
 	},
 	methods: {
@@ -66,11 +64,11 @@ export default {
 	},
 	computed: {
 		normalizedGraph () {
-			if (!this.selectedTicker) return []
-			if (this.rawValues.length === 0) return []
-			const maxValue = Math.max(...this.rawValues)
-			const minValue = Math.min(...this.rawValues)
-			const graphBarsHeight = this.rawValues.slice()
+			if (!this.ticker) return []
+			if (this.ticker.value.length === 0) return []
+			const maxValue = Math.max(...this.ticker.value)
+			const minValue = Math.min(...this.ticker.value)
+			const graphBarsHeight = this.ticker.value.slice()
 			const amplitude = maxValue - minValue
 
 			for (let i = 0; i < graphBarsHeight.length; i++) {
@@ -91,10 +89,9 @@ export default {
 			for (let i = 0; i < graphBarsHeight.length; i++) {
 				normalizedGraphHeightsAndValues.push({
 					columnHeight: graphBarsHeight[i],
-					value: this.rawValues[i]
+					value: this.ticker.value[i]
 				})
 			}
-			this.calculateMaxGraphElements()
 			if (normalizedGraphHeightsAndValues.length > this.graphMaxAmount) {
 				return normalizedGraphHeightsAndValues.slice(-this.graphMaxAmount)
 			}
@@ -104,6 +101,9 @@ export default {
 	},
 	created: function () {
 		window.addEventListener('resize', this.calculateMaxGraphElements)
+	},
+	renderTracked: function () {
+		this.calculateMaxGraphElements()
 	}
 }
 </script>

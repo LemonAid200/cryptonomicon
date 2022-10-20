@@ -40,8 +40,7 @@
       <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4"/>
 
 			<graph-prices
-				:selected-ticker="selectedTicker"
-				:raw-values="pricesToDisplay"
+				:ticker="tickerToDisplayInGraph"
 				@close-graph="() => selectedTicker = ''"
 			/>
 
@@ -52,6 +51,8 @@
 <script>
 /* eslint-disable */
 import { unsubscribeTicker, subscribeToTicker } from './api'
+import { saveTickersToLocalStorage, getTickersFromLocalStorage } from './localStorageTickers'
+
 import AddTicker from './components/AddTicker.vue'
 import LoadingCover from './components/LoadingCover.vue'
 import GraphPrices from './components/GraphPrices.vue'
@@ -102,17 +103,6 @@ export default {
 			}
 		},
 
-		updateLocalStorage () {
-			const tickersWithNullValue = []
-			this.addedTickers.forEach((item) =>
-				tickersWithNullValue.push({ name: item.name, value: [] })
-			)
-			localStorage.setItem(
-				'cryptonomicon-list-of-chosen-values',
-				JSON.stringify(tickersWithNullValue)
-			)
-		},
-
 		updateValues (tickerName, price) {
 			this.addedTickers.find(t => t.name === tickerName).value.push(price)
 			if (this.addedTickers.find(t => t.name === tickerName).value.length > 100) {
@@ -120,14 +110,14 @@ export default {
 			}
 		},
 
+		updateLocalStorage () {
+			saveTickersToLocalStorage(this.addedTickers)
+		},
 
-
-		updateTickersFromLocalStorage () {
-			const tickersData = localStorage.getItem(
-				'cryptonomicon-list-of-chosen-values'
-			)
+		getAndSubscribeToTickersFromLocalStorage () {
+			const tickersData = getTickersFromLocalStorage()
 			if (tickersData) {
-				this.addedTickers = JSON.parse(tickersData)
+				this.addedTickers = tickersData
 				this.addedTickers.forEach(ticker => {
 					subscribeToTicker(ticker.name, price => {
 						this.updateValues(ticker.name, price)
@@ -150,9 +140,9 @@ export default {
 			return (this.page - 1) * 6
 		},
 
-		pricesToDisplay () {
+		tickerToDisplayInGraph () {
 			if (this.addedTickers.length === 0 || this.selectedTicker === '') return []
-			return this.addedTickers.find((t) => t.name === this.selectedTicker).value
+			return this.addedTickers.find((t) => t.name === this.selectedTicker)
 		},
 
 		endIndex () {
@@ -218,7 +208,7 @@ export default {
 		}, 400)
 
 		this.setFilterAndPageFromURL()
-		this.updateTickersFromLocalStorage()
+		this.getAndSubscribeToTickersFromLocalStorage()
 	}
 }
 </script>
