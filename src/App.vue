@@ -110,10 +110,6 @@ export default {
 			}
 		},
 
-		updateLocalStorage () {
-			saveTickersToLocalStorage(this.addedTickers)
-		},
-
 		getAndSubscribeToTickersFromLocalStorage () {
 			const tickersData = getTickersFromLocalStorage()
 			if (tickersData) {
@@ -184,7 +180,7 @@ export default {
 
 	watch: {
 		addedTickers () {
-			this.updateLocalStorage()
+			saveTickersToLocalStorage(this.addedTickers)
 		},
 
 		pageStateOptions (value) {
