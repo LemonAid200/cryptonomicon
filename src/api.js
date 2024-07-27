@@ -1,6 +1,5 @@
 /* eslint-disable camelcase */
-const API_Key = 'f803a0614d11ffe8421ae96983ad4b1efe8ba29264d09309df3a6d9334f6169c'
-const allValuesLink = 'https://min-api.cryptocompare.com/data/all/coinlist?summary=true'
+import { apiKey, allValuesLink } from './keys'
 
 // fetch-based function for getting tickers prices without webSocket but via fetch
 // export const loadTickersValues = () => {
@@ -55,7 +54,7 @@ class CryptoWebSocket extends WebSocket {
 	}
 }
 
-const socket = new CryptoWebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${API_Key}`)
+const socket = new CryptoWebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${apiKey}`)
 socket.addEventListener('message', e => {
 	const message = JSON.parse(e.data)
 	if (message.TYPE === '5' && message.PRICE) {
