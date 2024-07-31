@@ -104,6 +104,10 @@ export default {
 	},
 	renderTracked: function () {
 		this.calculateMaxGraphElements()
+	},
+	mounted () {
+		this.calculateMaxGraphElements()
 	}
+
 }
 </script>

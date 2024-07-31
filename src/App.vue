@@ -40,6 +40,7 @@
       <hr v-if="addedTickers.length" class="w-full border-t border-gray-600 my-4"/>
 
 			<graph-prices
+				v-if="tickerToDisplayInGraph.length != 0"
 				:ticker="tickerToDisplayInGraph"
 				@close-graph="() => selectedTicker = ''"
 			/>
